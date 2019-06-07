@@ -363,6 +363,39 @@ describe('Automerge proxy API', () => {
           assert.deepEqual([...doc.list.values()], [1, 2, 3])
         })
       })
+
+      it('should allow mutation of objects returned from built in list iteration', () => {
+        root = Automerge.change(root, doc => {
+          doc.objects = [{foo: 'bar'}, {foo: 'baz'}]
+        })
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'baz'}])
+
+        root = Automerge.change(root, doc => {
+          for (let object of doc.objects) {
+            if (object.foo == 'baz') {
+              object.foo = 'qux'
+            }
+          }
+        })
+
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'qux'}])
+      })
+
+      it('should allow mutation of objects returned from readonly list methods', () => {
+        root = Automerge.change(root, doc => {
+          doc.objects = [{foo: 'bar'}, {foo: 'baz'}]
+        })
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'baz'}])
+
+        root = Automerge.change(root, doc => {
+          // use a proxied iterator function to get new proxies to objects in the list
+          const testObjects = doc.objects.filter(object => object.foo == 'baz')
+          assert.equal(testObjects.length, 1)
+          testObjects[0].foo = "qux"
+        })
+
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'qux'}])
+      })
     })
 
     describe('should support standard mutation methods', () => {
