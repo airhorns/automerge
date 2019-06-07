@@ -363,6 +363,23 @@ describe('Automerge proxy API', () => {
           assert.deepEqual([...doc.list.values()], [1, 2, 3])
         })
       })
+
+      it('should allow mutation of objects returned from readonly methods', () => {
+        root = Automerge.change(root, doc => {
+          doc.objects = [{foo: 'bar'}, {foo: 'baz'}];
+        })
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'baz'}])
+
+        root = Automerge.change(root, doc => {
+          const testObjects = doc.objects.filter(object => object.foo == 'baz');
+          assert.equal(testObjects.length, 1)
+          for (let object of testObjects) {
+            object.foo = "qux"
+          }
+        })
+
+        assert.deepEqual(root.objects, [{foo: 'bar'}, {foo: 'qux'}])
+      })
     })
 
     describe('should support standard mutation methods', () => {
